@@ -1,9 +1,14 @@
 package at.xtools.pwawrapper.webview;
 
+import static at.xtools.pwawrapper.MainActivity.FILECHOOSER_RESULTCODE;
+import static at.xtools.pwawrapper.MainActivity.REQUEST_SELECT_FILE;
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
@@ -13,12 +18,20 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.webkit.CookieManager;
+import android.webkit.JsResult;
+import android.webkit.MimeTypeMap;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import at.xtools.pwawrapper.Constants;
 import at.xtools.pwawrapper.R;
@@ -30,6 +43,8 @@ public class WebViewHelper {
     private UIManager uiManager;
     private WebView webView;
     private WebSettings webSettings;
+    public ValueCallback<Uri[]> uploadMessage;
+    public ValueCallback<Uri> mUploadMessage;
 
     public WebViewHelper(Activity activity, UIManager uiManager) {
         this.activity = activity;
@@ -38,9 +53,14 @@ public class WebViewHelper {
         this.webSettings = webView.getSettings();
     }
 
+    public WebView getWebView(){
+        return this.webView;
+    }
+
     /**
      * Simple helper method checking if connected to Network.
      * Doesn't check for actual Internet connection!
+     *
      * @return {boolean} True if connected to Network.
      */
     private boolean isNetworkAvailable() {
@@ -80,6 +100,10 @@ public class WebViewHelper {
         webSettings.setJavaScriptEnabled(true);
         // must be set for our js-popup-blocker:
         webSettings.setSupportMultipleWindows(true);
+        webSettings.setSupportZoom(false);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowContentAccess(true);
+        webSettings.setMediaPlaybackRequiresUserGesture(false);
 
         // PWA settings
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
@@ -119,15 +143,78 @@ public class WebViewHelper {
             //simple yet effective redirect/popup blocker
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                Message href = view.getHandler().obtainMessage();
-                view.requestFocusNodeHref(href);
-                final String popupUrl = href.getData().getString("url");
-                if (popupUrl != null) {
-                    //it's null for most rouge browser hijack ads
-                    webView.loadUrl(popupUrl);
-                    return true;
+                WebView newWebView = new WebView(view.getContext());
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(newWebView);
+                resultMsg.sendToTarget();
+
+                // Set up a WebViewClient to handle the new WebView
+                newWebView.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                        // Handle URL loading in the new WebView
+                        webView.loadUrl(request.getUrl().toString());
+                        return true;
+                    }
+                });
+
+                return true;
+            }
+
+            // For 3.0+ Devices (Start)
+            // onActivityResult attached before constructor
+            protected void openFileChooser(ValueCallback uploadMsg, String acceptType) {
+                mUploadMessage = uploadMsg;
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                activity.startActivityForResult(Intent.createChooser(i, "File Browser"), FILECHOOSER_RESULTCODE);
+            }
+
+            // For Lollipop 5.0+ Devices
+            public boolean onShowFileChooser(WebView mWebView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                if (uploadMessage != null) {
+                    uploadMessage.onReceiveValue(null);
+                    uploadMessage = null;
                 }
-                return false;
+
+                uploadMessage = filePathCallback;
+
+                Intent intent = null;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    intent = fileChooserParams.createIntent();
+                    List<String> validMimeTypes = extractValidMimeTypes(fileChooserParams.getAcceptTypes());
+                    if (validMimeTypes.isEmpty()) {
+                        intent.setType("*/*");
+                    } else {
+                        intent.setType(String.join(" ", validMimeTypes));
+                    }
+                }
+                try {
+                    activity.startActivityForResult(intent, REQUEST_SELECT_FILE);
+                } catch (ActivityNotFoundException e) {
+                    uploadMessage = null;
+                    Toast.makeText(activity.getApplicationContext(), "Cannot Open File Chooser", Toast.LENGTH_LONG).show();
+                    return false;
+                }
+                return true;
+            }
+
+
+            public void showFileChooser(ValueCallback<String[]> filePathCallback,
+                                        String acceptType, boolean paramBoolean) {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                activity.startActivityForResult(Intent.createChooser(i, "File Chooser"), FILECHOOSER_RESULTCODE);
+            }
+
+            public void showFileChooser(ValueCallback<String[]> uploadFileCallback,
+                                        FileChooserParams fileChooserParams) {
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                activity.startActivityForResult(Intent.createChooser(i, "File Chooser"), FILECHOOSER_RESULTCODE);
             }
 
             // update ProgressBar
@@ -135,6 +222,28 @@ public class WebViewHelper {
             public void onProgressChanged(WebView view, int newProgress) {
                 uiManager.setLoadingProgress(newProgress);
                 super.onProgressChanged(view, newProgress);
+            }
+
+            @Override
+            public boolean onJsConfirm(WebView view, String url, String message, final JsResult result) {
+                new AlertDialog.Builder(webView.getContext())
+                        .setMessage(message)
+                        .setPositiveButton(android.R.string.ok,
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        result.confirm();
+                                    }
+                                })
+                        .setNegativeButton(android.R.string.cancel,
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        result.cancel();
+                                    }
+                                })
+                        .create()
+                        .show();
+
+                return true;
             }
         });
 
@@ -213,15 +322,38 @@ public class WebViewHelper {
             }, 100);
         }
     }
-
+    private List<String> extractValidMimeTypes(String[] mimeTypes) {
+        List<String> results = new ArrayList<String>();
+        List<String> mimes;
+        if (mimeTypes.length == 1 && mimeTypes[0].contains(",")) {
+            mimes = Arrays.asList(mimeTypes[0].split(","));
+        } else {
+            mimes = Arrays.asList(mimeTypes);
+        }
+        MimeTypeMap mtm = MimeTypeMap.getSingleton();
+        for (String mime : mimes) {
+            if (mime != null && mime.trim().startsWith(".")) {
+                String extensionWithoutDot = mime.trim().substring(1, mime.trim().length());
+                String derivedMime = mtm.getMimeTypeFromExtension(extensionWithoutDot);
+                if (derivedMime != null && !results.contains(derivedMime)) {
+                    // adds valid mime type derived from the file extension
+                    results.add(derivedMime);
+                }
+            } else if (mtm.getExtensionFromMimeType(mime) != null && !results.contains(mime)) {
+                // adds valid mime type checked agains file extensions mappings
+                results.add(mime);
+            }
+        }
+        return results;
+    }
     // handle external urls
     private boolean handleUrlLoad(WebView view, String url) {
         // prevent loading content that isn't ours
         if (!url.startsWith(Constants.WEBAPP_URL)) {
             // stop loading
             // stopping only would cause the PWA to freeze, need to reload the app as a workaround
-            view.stopLoading();
-            view.reload();
+//            view.stopLoading();
+//            view.reload();
 
             // open external URL in Browser/3rd party apps instead
             try {
@@ -234,6 +366,8 @@ public class WebViewHelper {
             } catch (Exception e) {
                 showNoAppDialog(activity);
             }
+
+            view.loadUrl(Constants.WEBAPP_URL);
             // return value for shouldOverrideUrlLoading
             return true;
         } else {
