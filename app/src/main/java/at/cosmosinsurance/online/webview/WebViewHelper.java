@@ -110,7 +110,7 @@ public class WebViewHelper {
         webSettings.setJavaScriptEnabled(true);
         // must be set for our js-popup-blocker:
         webSettings.setSupportMultipleWindows(true);
-        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        //webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         webSettings.setSupportZoom(false);
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
@@ -446,7 +446,7 @@ public class WebViewHelper {
     // handle external urls
     private boolean handleUrlLoad(WebView view, String url) {
         // prevent loading content that isn't ours
-        if (!url.startsWith(Constants.getWebAppUrl())) {
+        if (!url.startsWith(Constants.getWebAppUrl()) && !url.contains("jccsecure.com")) {
             // stop loading
             // stopping only would cause the PWA to freeze, need to reload the app as a workaround
 //            view.stopLoading();
