@@ -1,23 +1,23 @@
-package at.xtools.pwawrapper;
+package at.cosmosinsurance.online;
 
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.app.ActivityCompat;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import at.xtools.pwawrapper.ui.UIManager;
-import at.xtools.pwawrapper.webview.WebViewHelper;
+import at.cosmosinsurance.online.ui.UIManager;
+import at.cosmosinsurance.online.webview.WebViewHelper;
 
 public class MainActivity extends AppCompatActivity {
     // Globals
@@ -25,9 +25,10 @@ public class MainActivity extends AppCompatActivity {
     private WebViewHelper webViewHelper;
     private boolean intentHandled = false;
 
-
     public static final int REQUEST_SELECT_FILE = 100;
     public static final int FILECHOOSER_RESULTCODE = 1;
+    private static final int PERMISSION_REQUEST_CODE = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Setup Theme
@@ -44,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
         webViewHelper.setupWebView();
         uiManager.changeRecentAppsIcon();
         checkAndRequestPermissions();
+
+        // Initialize FileProvider
+        //androidx.core.content.FileProvider.getUriForFile(this, this.getPackageName() + ".provider", new File(""));
 
         // Check for Intents
         try {
@@ -93,30 +97,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private boolean checkPermission(String permission) {
+        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
     private void checkAndRequestPermissions() {
-        int cameraPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
-        int recordPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
-        int audioPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        int audioPermission2 = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+        String[] permissions = {
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+        };
 
         List<String> listPermissionsNeeded = new ArrayList<>();
 
-        if (cameraPermission != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.CAMERA);
+        for (String permission : permissions) {
+            if (!checkPermission(permission)) {
+                listPermissionsNeeded.add(permission);
+            }
         }
-        if (recordPermission != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
-        }
-        if (audioPermission != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
-        if (audioPermission2 != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-        }
+
         if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),1);
+            ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
         }
     }
+
+
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent)
     {

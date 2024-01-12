@@ -1,11 +1,14 @@
-package at.xtools.pwawrapper.webview;
+package at.cosmosinsurance.online.webview;
 
-import static at.xtools.pwawrapper.MainActivity.FILECHOOSER_RESULTCODE;
-import static at.xtools.pwawrapper.MainActivity.REQUEST_SELECT_FILE;
+import static at.cosmosinsurance.online.MainActivity.FILECHOOSER_RESULTCODE;
+import static at.cosmosinsurance.online.MainActivity.REQUEST_SELECT_FILE;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,11 +18,16 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.FileProvider;
 import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.JsResult;
 import android.webkit.MimeTypeMap;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -28,14 +36,16 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.app.PendingIntent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.io.File;
 
-import at.xtools.pwawrapper.Constants;
-import at.xtools.pwawrapper.R;
-import at.xtools.pwawrapper.ui.UIManager;
+import at.cosmosinsurance.online.Constants;
+import at.cosmosinsurance.online.R;
+import at.cosmosinsurance.online.ui.UIManager;
 
 public class WebViewHelper {
     // Instance variables
@@ -53,7 +63,7 @@ public class WebViewHelper {
         this.webSettings = webView.getSettings();
     }
 
-    public WebView getWebView(){
+    public WebView getWebView() {
         return this.webView;
     }
 
@@ -276,11 +286,12 @@ public class WebViewHelper {
                     }
                 }
             }
+
             //Handle if request comes from same hostname. If not, it may be an intent
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
 
-                if((String.valueOf(request.getUrl())).contains(Constants.WEBAPP_HOST)) {
+                if ((String.valueOf(request.getUrl())).contains(Constants.WEBAPP_HOST)) {
                     view.loadUrl(String.valueOf(request.getUrl()));
                 } else {
                     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
@@ -290,6 +301,51 @@ public class WebViewHelper {
                 return true;
             }
         });
+
+        setDownloadListener();
+    }
+
+    public void setDownloadListener() {
+        webView.setDownloadListener(new CustomDownloadListener(activity));
+    }
+
+    // Inner class for handling downloads
+    private static class CustomDownloadListener implements DownloadListener {
+
+        private final Context context;
+
+        public CustomDownloadListener(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+
+            // Set the file name for the downloaded file
+            String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+            request.setTitle(fileName);
+
+            // Set destination folder
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+            // Set destination folder
+            Uri destinationUri = Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName));
+
+            // Allow the Media Scanner to scan the downloaded file
+            request.allowScanningByMediaScanner();
+
+            // Set the MIME type
+            request.setMimeType(mimeType);
+
+            // Set cookies if any
+            String cookies = CookieManager.getInstance().getCookie(url);
+            request.addRequestHeader("cookie", cookies);
+
+            // Enqueue the download and display a notification
+            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+            downloadManager.enqueue(request);
+
+        }
     }
 
     // Lifecycle callbacks
@@ -304,10 +360,11 @@ public class WebViewHelper {
     // show "no app found" dialog
     private void showNoAppDialog(Activity thisActivity) {
         new AlertDialog.Builder(thisActivity)
-            .setTitle(R.string.noapp_heading)
-            .setMessage(R.string.noapp_description)
-            .show();
+                .setTitle(R.string.noapp_heading)
+                .setMessage(R.string.noapp_description)
+                .show();
     }
+
     // handle load errors
     private void handleLoadError(int errorCode) {
         if (errorCode != WebViewClient.ERROR_UNSUPPORTED_SCHEME) {
@@ -322,6 +379,7 @@ public class WebViewHelper {
             }, 100);
         }
     }
+
     private List<String> extractValidMimeTypes(String[] mimeTypes) {
         List<String> results = new ArrayList<String>();
         List<String> mimes;
@@ -346,6 +404,7 @@ public class WebViewHelper {
         }
         return results;
     }
+
     // handle external urls
     private boolean handleUrlLoad(WebView view, String url) {
         // prevent loading content that isn't ours

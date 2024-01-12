@@ -1,4 +1,4 @@
-package at.xtools.pwawrapper;
+package at.cosmosinsurance.online;
 
 public class Constants {
     public Constants(){}

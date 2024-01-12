@@ -1,4 +1,4 @@
-package at.xtools.pwawrapper.ui;
+package at.cosmosinsurance.online.ui;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -14,8 +14,8 @@ import android.webkit.WebView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
-import at.xtools.pwawrapper.Constants;
-import at.xtools.pwawrapper.R;
+import at.cosmosinsurance.online.Constants;
+import at.cosmosinsurance.online.R;
 
 public class UIManager {
     // Instance variables
@@ -97,7 +97,7 @@ public class UIManager {
 
             TypedValue typedValue = new TypedValue();
             Resources.Theme theme = activity.getTheme();
-            theme.resolveAttribute(android.support.v7.appcompat.R.attr.colorPrimary, typedValue, true);
+            theme.resolveAttribute(R.color.colorPrimary, typedValue, true);
             int color = typedValue.data;
 
             ActivityManager.TaskDescription description = new ActivityManager.TaskDescription(

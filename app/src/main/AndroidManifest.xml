@@ -22,7 +22,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true">
-        <activity android:name="at.xtools.pwawrapper.MainActivity"
+        <activity android:name="at.cosmosinsurance.online.MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true"
             android:theme="@style/AppTheme.Launch">
