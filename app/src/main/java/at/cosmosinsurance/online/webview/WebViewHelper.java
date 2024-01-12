@@ -291,7 +291,7 @@ public class WebViewHelper {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
 
-                if ((String.valueOf(request.getUrl())).contains(Constants.WEBAPP_HOST)) {
+                if ((String.valueOf(request.getUrl())).contains(Constants.getWebAppHost())) {
                     view.loadUrl(String.valueOf(request.getUrl()));
                 } else {
                     Intent intent = new Intent(Intent.ACTION_VIEW, request.getUrl());
@@ -445,7 +445,7 @@ public class WebViewHelper {
     // handle external urls
     private boolean handleUrlLoad(WebView view, String url) {
         // prevent loading content that isn't ours
-        if (!url.startsWith(Constants.WEBAPP_URL)) {
+        if (!url.startsWith(Constants.getWebAppUrl())) {
             // stop loading
             // stopping only would cause the PWA to freeze, need to reload the app as a workaround
 //            view.stopLoading();
@@ -463,7 +463,7 @@ public class WebViewHelper {
                 showNoAppDialog(activity);
             }
 
-            view.loadUrl(Constants.WEBAPP_URL);
+            view.loadUrl(Constants.getWebAppUrl());
             // return value for shouldOverrideUrlLoading
             return true;
         } else {
@@ -486,12 +486,12 @@ public class WebViewHelper {
 
     // load app startpage
     public void loadHome() {
-        webView.loadUrl(Constants.WEBAPP_URL);
+        webView.loadUrl(Constants.getWebAppUrl());
     }
 
     // load URL from intent
     public void loadIntentUrl(String url) {
-        if (!url.equals("") && url.contains(Constants.WEBAPP_HOST)) {
+        if (!url.equals("") && url.contains(Constants.getWebAppHost())) {
             webView.loadUrl(url);
         } else {
             // Fallback

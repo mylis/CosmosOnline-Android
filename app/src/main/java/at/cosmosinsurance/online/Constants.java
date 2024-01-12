@@ -3,8 +3,15 @@ package at.cosmosinsurance.online;
 public class Constants {
     public Constants(){}
     // Root page
-    public static String WEBAPP_URL = "https://cosmosinsurance.cy/";
-    public static String WEBAPP_HOST = "cosmosinsurance.cy"; // used for checking Intent-URLs
+    // Root page
+    // Root page
+    public static String getWebAppUrl() {
+        return BuildConfig.DEBUG ? "https://test.cosmosins.com/" : "https://cosmosinsurance.cy/";
+    }
+
+    public static String getWebAppHost() {
+        return BuildConfig.DEBUG ? "test.cosmosins.com" : "cosmosinsurance.cy";
+    }
 
 	// User Agent tweaks
     public static boolean POSTFIX_USER_AGENT = true; // set to true to append USER_AGENT_POSTFIX to user agent
