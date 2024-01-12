@@ -345,6 +345,43 @@ public class WebViewHelper {
             DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
             downloadManager.enqueue(request);
 
+            //showDownloadNotification(context, fileName, destinationUri);
+        }
+
+        // Method to show a notification
+        private void showDownloadNotification(Context context, String fileName, Uri fileUri) {
+            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+            // Create a notification channel for Android Oreo and higher
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                String channelId = "download_channel";
+                String channelName = "Download Channel";
+                NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+                notificationManager.createNotificationChannel(channel);
+            }
+
+            // Create a notification
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "download_channel")
+                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                    .setContentTitle("File Downloaded")
+                    .setContentText("File " + fileName + " has been downloaded.")
+                    .setContentIntent(createPendingIntent(context, fileUri))
+                    .setAutoCancel(true);
+
+            // Show the notification
+            notificationManager.notify(1, builder.build());
+        }
+
+        // Method to create a PendingIntent to open the downloaded file
+        private PendingIntent createPendingIntent(Context context, Uri fileUri) {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(fileUri, "application/*");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            // Use FileProvider to get content URI
+            Uri contentUri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", new File(fileUri.getPath()));
+
+            return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         }
     }
 
