@@ -1,7 +1,10 @@
 package at.cosmosinsurance.online;
 
 import android.Manifest;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -17,12 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import at.cosmosinsurance.online.ui.UIManager;
+import at.cosmosinsurance.online.webview.DownloadCompleteReceiver;
 import at.cosmosinsurance.online.webview.WebViewHelper;
 
 public class MainActivity extends AppCompatActivity {
     // Globals
     private UIManager uiManager;
     private WebViewHelper webViewHelper;
+    private DownloadCompleteReceiver downloadCompleteReceiver;
     private boolean intentHandled = false;
 
     public static final int REQUEST_SELECT_FILE = 100;
@@ -46,8 +51,13 @@ public class MainActivity extends AppCompatActivity {
         uiManager.changeRecentAppsIcon();
         checkAndRequestPermissions();
 
-        // Initialize FileProvider
-        //androidx.core.content.FileProvider.getUriForFile(this, this.getPackageName() + ".provider", new File(""));
+        // Create and register the BroadcastReceiver
+        downloadCompleteReceiver = new DownloadCompleteReceiver();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), 4);
+        }else {
+            registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        }
 
         // Check for Intents
         try {
@@ -95,6 +105,16 @@ public class MainActivity extends AppCompatActivity {
         if (!webViewHelper.goBack()) {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Unregister the BroadcastReceiver when the activity is destroyed
+        if (downloadCompleteReceiver != null) {
+            unregisterReceiver(downloadCompleteReceiver);
+        }
+
+        super.onDestroy();
     }
 
     private boolean checkPermission(String permission) {
