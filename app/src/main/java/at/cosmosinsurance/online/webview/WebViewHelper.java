@@ -1,5 +1,6 @@
 package at.cosmosinsurance.online.webview;
 
+import static androidx.core.content.ContextCompat.getSystemService;
 import static at.cosmosinsurance.online.MainActivity.FILECHOOSER_RESULTCODE;
 import static at.cosmosinsurance.online.MainActivity.REQUEST_SELECT_FILE;
 
@@ -8,6 +9,8 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -40,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import at.cosmosinsurance.online.Constants;
+import at.cosmosinsurance.online.NotificationUtils;
 import at.cosmosinsurance.online.R;
 import at.cosmosinsurance.online.ui.UIManager;
 
@@ -51,12 +55,14 @@ public class WebViewHelper {
     private WebSettings webSettings;
     public ValueCallback<Uri[]> uploadMessage;
     public ValueCallback<Uri> mUploadMessage;
+    private NotificationUtils notificationUtils;
 
     public WebViewHelper(Activity activity, UIManager uiManager) {
         this.activity = activity;
         this.uiManager = uiManager;
         this.webView = (WebView) activity.findViewById(R.id.webView);
         this.webSettings = webView.getSettings();
+        this.notificationUtils = new NotificationUtils(activity.getApplicationContext());
     }
 
     public WebView getWebView() {
@@ -423,7 +429,7 @@ public class WebViewHelper {
     }
 
     // Inner class for handling downloads
-    private static class CustomDownloadListener implements DownloadListener {
+    private class CustomDownloadListener implements DownloadListener {
 
         private final Context context;
 
@@ -456,19 +462,12 @@ public class WebViewHelper {
 
             // Enqueue the download and display a notification
             DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-            downloadManager.enqueue(request);
+            long downloadId = downloadManager.enqueue(request);
+
+            // Show the notification
+            //notificationUtils.showPrivateNotification("File Downloaded", fileName, (int) downloadId);
 
             Toast.makeText(context, "File Downloaded", Toast.LENGTH_SHORT).show();
-
-//            // Add a notification
-//            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-//            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "default_channel_id")
-//                    .setSmallIcon(R.drawable.ic_appbar)
-//                    .setContentTitle("Download Complete")
-//                    .setContentText("File downloaded successfully")
-//                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-//
-//            notificationManager.notify(1, builder.build());
         }
     }
 
