@@ -1,6 +1,6 @@
 package at.cosmosinsurance.online.webview;
 
-import static androidx.core.content.ContextCompat.getSystemService;
+import static android.content.Context.DOWNLOAD_SERVICE;
 import static at.cosmosinsurance.online.MainActivity.FILECHOOSER_RESULTCODE;
 import static at.cosmosinsurance.online.MainActivity.REQUEST_SELECT_FILE;
 
@@ -9,8 +9,6 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -37,13 +35,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import at.cosmosinsurance.online.Constants;
-import at.cosmosinsurance.online.NotificationUtils;
 import at.cosmosinsurance.online.R;
 import at.cosmosinsurance.online.ui.UIManager;
 
@@ -55,14 +51,12 @@ public class WebViewHelper {
     private WebSettings webSettings;
     public ValueCallback<Uri[]> uploadMessage;
     public ValueCallback<Uri> mUploadMessage;
-    private NotificationUtils notificationUtils;
 
     public WebViewHelper(Activity activity, UIManager uiManager) {
         this.activity = activity;
         this.uiManager = uiManager;
         this.webView = (WebView) activity.findViewById(R.id.webView);
         this.webSettings = webView.getSettings();
-        this.notificationUtils = new NotificationUtils(activity.getApplicationContext());
     }
 
     public WebView getWebView() {
@@ -105,6 +99,7 @@ public class WebViewHelper {
     }
 
     // handles initial setup of webview
+    @SuppressLint("WrongConstant")
     public void setupWebView() {
         // accept cookies
         CookieManager.getInstance().setAcceptCookie(true);
@@ -305,13 +300,35 @@ public class WebViewHelper {
             }
         });
 
-        setDownloadListener();
-    }
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition,
+                                        String mimeType, long contentLength) {
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                // Set MIME type based on file extension
+                String fileExtension = MimeTypeMap.getFileExtensionFromUrl(url);
+                String contentType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension);
+                if (contentType == null) {
+                    // If the MIME type is still null, fallback to the provided mimeType
+                    contentType = mimeType;
+                }
+                request.setMimeType(contentType);
+                String cookies = CookieManager.getInstance().getCookie(url);
+                request.addRequestHeader("cookie", cookies);
+                request.addRequestHeader("User-Agent", userAgent);
+                request.setDescription("Downloading File");
+                request.setTitle(URLUtil.guessFileName(url, contentDisposition, contentType));
+                request.allowScanningByMediaScanner();
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                        URLUtil.guessFileName(url, contentDisposition, mimeType));
+                DownloadManager downloadManager = (DownloadManager) activity.getApplicationContext().getSystemService(DOWNLOAD_SERVICE);
+                final long downloadId = downloadManager.enqueue(request);
 
-    public void setDownloadListener() {
-        webView.setDownloadListener(new CustomDownloadListener(activity));
+                Toast.makeText(activity.getApplicationContext(), "Downloading File", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
-
 
     // Lifecycle callbacks
     public void onPause() {
@@ -425,49 +442,6 @@ public class WebViewHelper {
         } else {
             // Fallback
             loadHome();
-        }
-    }
-
-    // Inner class for handling downloads
-    private class CustomDownloadListener implements DownloadListener {
-
-        private final Context context;
-
-        public CustomDownloadListener(Context context) {
-            this.context = context;
-        }
-
-        @Override
-        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-
-            // Set the file name for the downloaded file
-            String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
-            request.setTitle(fileName);
-
-            // Set destination folder
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-            // Set destination folder
-            Uri destinationUri = Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName));
-
-            // Allow the Media Scanner to scan the downloaded file
-            request.allowScanningByMediaScanner();
-
-            // Set the MIME type
-            request.setMimeType(mimeType);
-
-            // Set cookies if any
-            String cookies = CookieManager.getInstance().getCookie(url);
-            request.addRequestHeader("cookie", cookies);
-
-            // Enqueue the download and display a notification
-            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-            long downloadId = downloadManager.enqueue(request);
-
-            // Show the notification
-            //notificationUtils.showPrivateNotification("File Downloaded", fileName, (int) downloadId);
-
-            Toast.makeText(context, "File Downloaded", Toast.LENGTH_SHORT).show();
         }
     }
 
