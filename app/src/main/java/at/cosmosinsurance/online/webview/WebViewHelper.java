@@ -3,12 +3,11 @@ package at.cosmosinsurance.online.webview;
 import static at.cosmosinsurance.online.MainActivity.FILECHOOSER_RESULTCODE;
 import static at.cosmosinsurance.online.MainActivity.REQUEST_SELECT_FILE;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -21,8 +20,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.FileProvider;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.JsResult;
@@ -36,12 +33,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
-import android.app.PendingIntent;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.io.File;
 
 import at.cosmosinsurance.online.Constants;
 import at.cosmosinsurance.online.R;
@@ -310,51 +306,13 @@ public class WebViewHelper {
         webView.setDownloadListener(new CustomDownloadListener(activity));
     }
 
-    // Inner class for handling downloads
-    private static class CustomDownloadListener implements DownloadListener {
-
-        private final Context context;
-
-        public CustomDownloadListener(Context context) {
-            this.context = context;
-        }
-
-        @Override
-        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-
-            // Set the file name for the downloaded file
-            String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
-            request.setTitle(fileName);
-
-            // Set destination folder
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-            // Set destination folder
-            Uri destinationUri = Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName));
-
-            // Allow the Media Scanner to scan the downloaded file
-            request.allowScanningByMediaScanner();
-
-            // Set the MIME type
-            request.setMimeType(mimeType);
-
-            // Set cookies if any
-            String cookies = CookieManager.getInstance().getCookie(url);
-            request.addRequestHeader("cookie", cookies);
-
-            // Enqueue the download and display a notification
-            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-            downloadManager.enqueue(request);
-
-            Toast.makeText(context, "Downloading File", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     // Lifecycle callbacks
     public void onPause() {
         webView.onPause();
     }
 
+    @SuppressLint("WrongConstant")
     public void onResume() {
         webView.onResume();
     }
@@ -463,4 +421,55 @@ public class WebViewHelper {
             loadHome();
         }
     }
+
+    // Inner class for handling downloads
+    private static class CustomDownloadListener implements DownloadListener {
+
+        private final Context context;
+
+        public CustomDownloadListener(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+
+            // Set the file name for the downloaded file
+            String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+            request.setTitle(fileName);
+
+            // Set destination folder
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+            // Set destination folder
+            Uri destinationUri = Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName));
+
+            // Allow the Media Scanner to scan the downloaded file
+            request.allowScanningByMediaScanner();
+
+            // Set the MIME type
+            request.setMimeType(mimeType);
+
+            // Set cookies if any
+            String cookies = CookieManager.getInstance().getCookie(url);
+            request.addRequestHeader("cookie", cookies);
+
+            // Enqueue the download and display a notification
+            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+            downloadManager.enqueue(request);
+
+            Toast.makeText(context, "File Downloaded", Toast.LENGTH_SHORT).show();
+
+//            // Add a notification
+//            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+//            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "default_channel_id")
+//                    .setSmallIcon(R.drawable.ic_appbar)
+//                    .setContentTitle("Download Complete")
+//                    .setContentText("File downloaded successfully")
+//                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+//
+//            notificationManager.notify(1, builder.build());
+        }
+    }
+
 }

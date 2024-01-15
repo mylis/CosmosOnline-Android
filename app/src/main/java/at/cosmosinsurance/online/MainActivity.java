@@ -1,33 +1,28 @@
 package at.cosmosinsurance.online;
 
 import android.Manifest;
-import android.app.DownloadManager;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebChromeClient;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.core.app.ActivityCompat;
 
-import java.io.File;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import at.cosmosinsurance.online.ui.UIManager;
-import at.cosmosinsurance.online.webview.DownloadCompleteReceiver;
 import at.cosmosinsurance.online.webview.WebViewHelper;
 
 public class MainActivity extends AppCompatActivity {
     // Globals
     private UIManager uiManager;
     private WebViewHelper webViewHelper;
-    private DownloadCompleteReceiver downloadCompleteReceiver;
     private boolean intentHandled = false;
 
     public static final int REQUEST_SELECT_FILE = 100;
@@ -50,14 +45,6 @@ public class MainActivity extends AppCompatActivity {
         webViewHelper.setupWebView();
         uiManager.changeRecentAppsIcon();
         checkAndRequestPermissions();
-
-        // Create and register the BroadcastReceiver
-        downloadCompleteReceiver = new DownloadCompleteReceiver();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), 4);
-        }else {
-            registerReceiver(downloadCompleteReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-        }
 
         // Check for Intents
         try {
@@ -109,11 +96,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        // Unregister the BroadcastReceiver when the activity is destroyed
-        if (downloadCompleteReceiver != null) {
-            unregisterReceiver(downloadCompleteReceiver);
-        }
-
         super.onDestroy();
     }
 
@@ -123,8 +105,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkAndRequestPermissions() {
         String[] permissions = {
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO,
+//                Manifest.permission.CAMERA,
+//                Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_EXTERNAL_STORAGE
         };
