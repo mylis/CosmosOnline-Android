@@ -1,8 +1,8 @@
-# Android-PWA-Wrapper
+# Android-PWA-Wrapper (Cloned)
 
 An Android Wrapper application to create native Android Apps from an offline-capable Progressive Web App.
 
-## How to build your own
+## What has been done
 - ✅ Get Android Studio 3.4+
 - ✅ Clone/fork repository
 - ✅ Put your Web App's URL in _WEBAPP_URL_ in `Constants.java`
@@ -16,7 +16,9 @@ An Android Wrapper application to create native Android Apps from an offline-cap
 - ✅ Change `AndroidManifest.xml` -> `aplication` -> `activity` -> `intent-filter` to your own URLs/schemes/patterns/etc. or remove the `intent-filter` for `android.intent.action.VIEW` altogether
 - ✅ Check `Constants.java` for more options
 - ✅ Build App in Android Studio
+- 🆕 Updated gradle and AndroidX
+- 🆕 File uploading functionality
+- 🆕 File download handling
 
 ## License
 [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html) - if you use it, we wanna see it!
-Other licensing options are available on inquiry.
