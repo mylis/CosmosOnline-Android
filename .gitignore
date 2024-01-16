@@ -1,14 +1,15 @@
-/captures
-.externalNativeBuild
-
 # Built application files
-/*/build/
+/app/build/
 
 # Local configuration file (sdk path, etc)
 local.properties
 
 # Gradle generated files
 .gradle/
+/.idea/
+/build/
+/captures/
+.externalNativeBuild/
 
 # Signing files
 .signing/
@@ -35,3 +36,13 @@ local.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Logs
+*.log
+
+# Emulator/device specific files
+/gradle.xml
+/gradlew
+/gradlew.bat
+/gradle-wrapper.properties
+/gradle-wrapper.jar
