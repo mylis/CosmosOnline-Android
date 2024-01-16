@@ -3,8 +3,6 @@ package at.cosmosinsurance.online;
 public class Constants {
     public Constants(){}
     // Root page
-    // Root page
-    // Root page
     public static String getWebAppUrl() {
         return BuildConfig.DEBUG ? "https://test.cosmosins.com/" : "https://cosmosinsurance.cy/";
     }
