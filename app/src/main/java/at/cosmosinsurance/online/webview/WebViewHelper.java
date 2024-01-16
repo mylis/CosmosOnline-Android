@@ -107,7 +107,7 @@ public class WebViewHelper {
         webSettings.setJavaScriptEnabled(true);
         // must be set for our js-popup-blocker:
         webSettings.setSupportMultipleWindows(true);
-        //webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         webSettings.setSupportZoom(false);
         webSettings.setAllowFileAccess(true);
         webSettings.setAllowContentAccess(true);
