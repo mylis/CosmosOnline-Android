@@ -6,7 +6,7 @@ android {
         applicationId "at.cosmosinsurance.online"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1
+        versionCode 3
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -22,7 +22,7 @@ android {
         }
         release {
             buildConfigField "boolean", "DEBUG", "false"
-            minifyEnabled false
+            minifyEnabled true
             debuggable false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
